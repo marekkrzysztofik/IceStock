@@ -1,6 +1,4 @@
 <template>
-  <h1>siema</h1>
-  
   <router-view></router-view>
 </template>
 <script setup>
