@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Storage;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class StorageController extends Controller
@@ -12,7 +12,28 @@ class StorageController extends Controller
     {
         return Storage::all();
     }
-    
+    public function show($shopId)
+    {
+        $storages = Storage::where('shop_id', $shopId)
+        ->with(['inventories.iceCream'])
+        ->get()
+        ->map(function ($storage) {
+            return [
+                'storage_id' => $storage->id,
+                'storage_name' => $storage->name,
+                'inventory' => $storage->inventories->map(function ($inventory) {
+                    return [
+                        'inventory_id' => $inventory->id,
+                        'ice_cream_id' => $inventory->ice_cream_id,
+                        'ice_cream_name' => $inventory->iceCream->name ?? null,
+                        'quantity' => $inventory->quantity,
+                    ];
+                })->toArray()
+            ];
+        });
+
+    return $storages;
+    }
     public function store(Request $request)
     {
         return Storage::create($request->validate([

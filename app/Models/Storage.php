@@ -13,4 +13,8 @@ class Storage extends Model
     {
         return $this->belongsTo(Shop::class);
     }
+    public function inventories()
+{
+    return $this->hasMany(Inventory::class);
+}
 }
