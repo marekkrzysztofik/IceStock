@@ -13,6 +13,10 @@ Route::get('/user', function (Request $request) {
 
 
 Route::apiResource('icecreams', IceCreamController::class);
+
 Route::apiResource('shops', ShopController::class);
+
 Route::apiResource('inventories', InventoryController::class);
+Route::post('inventories/bulk-update', [InventoryController::class, 'bulkUpdate']);
+
 Route::apiResource('storages', StorageController::class);

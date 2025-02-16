@@ -23,7 +23,8 @@ class StorageController extends Controller
                 'storage_name' => $storage->name,
                 'inventory' => $storage->inventories->map(function ($inventory) {
                     return [
-                        'inventory_id' => $inventory->id,
+                        'id' => $inventory->id,
+                        'storage_id' => $inventory->storage_id,
                         'ice_cream_id' => $inventory->ice_cream_id,
                         'ice_cream_name' => $inventory->iceCream->name ?? null,
                         'quantity' => $inventory->quantity,
