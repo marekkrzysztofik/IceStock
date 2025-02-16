@@ -36,7 +36,10 @@
 
             </DataTable>
             <Button label="Zapisz" @click="saveAllChanges" class="mt-3" />
-
+        </Dialog>
+        <Dialog v-model:visible="addDialogVisible" modal header="Edytuj inventory" :style="{ width: '600px' }">
+            
+            <Button label="Zapisz" @click="saveAllChanges" class="mt-3" />
         </Dialog>
 
     </div>
