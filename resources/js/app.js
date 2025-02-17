@@ -17,6 +17,7 @@ import Dialog from 'primevue/dialog';
 import ScrollPanel from 'primevue/scrollpanel';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
+import AutoComplete from 'primevue/autocomplete';
 import Button from 'primevue/button';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -48,7 +49,7 @@ app.component("InputNumber", InputNumber);
 app.component("Dialog", Dialog);
 app.component("Toast", Toast);
 app.component("ScrollPanel", ScrollPanel);
-
+app.component("AutoComplete", AutoComplete);
 
 app.mount("#app");
 

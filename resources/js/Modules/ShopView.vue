@@ -1,32 +1,39 @@
 <template>
     <div class="p-6">
         <h2 class="text-2xl font-bold mb-6 text-blue-800">Stany magazynowe lodów</h2>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div v-for="storage in storages" :key="storage.storage_id"
                 class="p-4 bg-gradient-to-b from-blue-100 to-blue-50 rounded-xl shadow-md hover:scale-105 transition-transform duration-300">
                 <h3 class="text-xl font-semibold mb-4 text-blue-700">{{ storage.storage_name }}</h3>
                 <div v-if="storage.inventory.length > 0" class="space-y-4">
                     <div v-for="item in storage.inventory" :key="item.id" class="mb-2">
-                        <span class="text-lg font-medium text-blue-600">{{ item.ice_cream_name }}</span>
-                        <div class="relative w-full h-6 bg-gray-200 rounded-lg overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-green-400 to-green-600"
-                                :style="{ width: `${item.quantity * 20}%` }"></div>
+                        <div v-if="item.quantity > 0">
+                            <span class="text-lg font-medium text-blue-600">{{ item.ice_cream_name }}</span>
+                            <div class="relative w-full h-6 bg-gray-200 rounded-lg overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-green-400 to-green-600"
+                                    :style="{ width: `${item.quantity * 20}%` }"></div>
+                            </div>
+                            <p class="text-sm text-gray-700 mt-2">Ilość kuwet: {{ item.quantity }}</p>
                         </div>
-                        <p class="text-sm text-gray-700 mt-2">Ilość kuwet: {{ item.quantity }}</p>
                     </div>
                 </div>
                 <div v-else class="text-gray-500">Brak dostępnych lodów</div>
-                <Button label="Edytuj inventory" icon="pi pi-pencil" class="mt-4 mr-2"
-                    @click="openEditDialog(storage)" />
+                <Button label="Edytuj" icon="pi pi-pencil" class="mt-4 mr-2" @click="openEditDialog(storage)" />
 
 
-                <Button label="Dodaj inventory" icon="pi pi-plus" class="mt-4" @click="openAddDialog(storage)" />
+                <Button label="Transfer z" icon="pi pi-plus" class="mt-4" @click="openTransferDialog(storage)" />
 
             </div>
         </div>
         <Dialog v-model:visible="editDialogVisible" modal header="Edytuj inventory" :style="{ width: '600px' }">
             <DataTable v-model:value="selectedStorage.inventory" @cell-edit-complete="onCellEditComplete"
                 editMode="cell" class="p-datatable-sm">
+                <template #header>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xl font-bold"></span>
+                    </div>
+                </template>
                 <Column style="width: 15rem;" field="ice_cream_name" header="Smak lodów" />
                 <Column field="quantity" header="Ilość kuwet">
                     <template #editor="{ data, field }">
@@ -37,12 +44,17 @@
             </DataTable>
             <Button label="Zapisz" @click="saveAllChanges" class="mt-3" />
         </Dialog>
-        <Dialog v-model:visible="addDialogVisible" modal header="Edytuj inventory" :style="{ width: '600px' }">
-            
+        <Dialog v-model:visible="addDialogVisible" modal header="Transfer" :style="{ width: '600px' }">
+            <div>
+                <AutoComplete v-model="value" dropdown :suggestions="storages" optionLabel="storage_name"
+                    @complete="search" />
+            </div>
+
             <Button label="Zapisz" @click="saveAllChanges" class="mt-3" />
         </Dialog>
 
     </div>
+
 </template>
 <script setup>
 import axios from "axios";
@@ -54,19 +66,30 @@ const props = defineProps({
         default: 0,
     },
 });
+
+const value = ref("")
 const storages = ref([]);
 const editDialogVisible = ref(false);
 const addDialogVisible = ref(false);
 let selectedStorage = ref(null);
-const newInventory = ref({ name: '', quantity: 0 });
 const editedCells = ref([]);
+onMounted(async () => {
+    await getStorages()
+});
+
+const search = (event) => {
+    let _items = [...storages.value];
+    storages.value = event.query ? [...storages.value].map((item) => event.query + '-' + item) : _items;
+};
 const openEditDialog = (storage) => {
+    console.log(storage);
     selectedStorage = JSON.parse(JSON.stringify(storage));
     editDialogVisible.value = true;
 };
 
-const openAddDialog = (storage) => {
-    selectedStorage.value = storage;
+const openTransferDialog = (storage) => {
+
+    selectedStorage = JSON.parse(JSON.stringify(storage));
     addDialogVisible.value = true;
 };
 const onCellEditComplete = (event) => {
@@ -102,24 +125,9 @@ const saveAllChanges = async () => {
     }
     editDialogVisible.value = false;
 };
-    
 
-const addInventory = () => {
-    if (newInventory.value.name && newInventory.value.quantity > 0) {
-        const newId = Math.max(0, ...selectedStorage.value.inventory.map(i => i.inventory_id)) + 1;
-        selectedStorage.value.inventory.push({
-            inventory_id: newId,
-            ice_cream_name: newInventory.value.name,
-            quantity: newInventory.value.quantity,
-            ice_cream_id: newId
-        });
-        newInventory.value = { name: '', quantity: 0 };
-        addDialogVisible.value = false;
-    }
-};
-onMounted(async () => {
-    await getStorages()
-});
+
+
 
 
 const getStorages = async () => {

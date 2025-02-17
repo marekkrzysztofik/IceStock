@@ -35,6 +35,7 @@ class StorageController extends Controller
 
     return $storages;
     }
+    
     public function store(Request $request)
     {
         return Storage::create($request->validate([

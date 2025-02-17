@@ -2,64 +2,74 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transfer;
 use Illuminate\Http\Request;
+use App\Models\Transfer;
+use App\Models\Inventory;
+use App\Models\Storage;
+use Illuminate\Support\Facades\DB;
 
 class TransferController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function createTransfer(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'source_storage_id' => 'required|exists:storages,id',
+            'destination_storage_id' => 'required|exists:storages,id|different:source_storage_id',
+            'ice_cream_id' => 'required|exists:ice_creams,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $inventory = Inventory::where('storage_id', $validated['source_storage_id'])
+            ->where('ice_cream_id', $validated['ice_cream_id'])
+            ->first();
+
+        if (!$inventory || $inventory->quantity < $validated['quantity']) {
+            return response()->json(['error' => 'Niewystarczająca ilość produktu w magazynie'], 400);
+        }
+
+        $sourceStorage = Storage::find($validated['source_storage_id']);
+        $destinationStorage = Storage::find($validated['destination_storage_id']);
+
+        $status = $sourceStorage->shop_id === $destinationStorage->shop_id ? 'zatwierdzony' : 'oczekujacy';
+
+        DB::transaction(function () use ($validated, $inventory, $status) {
+            Transfer::create(array_merge($validated, ['status' => $status]));
+
+            $inventory->decrement('quantity', $validated['quantity']);
+
+            if ($status === 'zatwierdzony') {
+                Inventory::updateOrCreate(
+                    [
+                        'storage_id' => $validated['destination_storage_id'],
+                        'ice_cream_id' => $validated['ice_cream_id'],
+                    ],
+                    ['quantity' => DB::raw("quantity + {$validated['quantity']}")]
+                );
+            }
+        });
+
+        return response()->json(['message' => "Transfer utworzony pomyślnie" . ($status === 'oczekujacy' ? " i oczekuje na zatwierdzenie" : " i został automatycznie zatwierdzony")]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function approveTransfer(Transfer $transfer)
     {
-        //
-    }
+        if ($transfer->status !== 'oczekujacy') {
+            return response()->json(['error' => 'Transfer został już zatwierdzony'], 400);
+        }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        DB::transaction(function () use ($transfer) {
+            $destinationInventory = Inventory::firstOrNew([
+                'storage_id' => $transfer->destination_storage_id,
+                'ice_cream_id' => $transfer->ice_cream_id,
+            ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Transfer $transfer)
-    {
-        //
-    }
+            $destinationInventory->quantity += $transfer->quantity;
+            $destinationInventory->save();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Transfer $transfer)
-    {
-        //
-    }
+            $transfer->status = 'zatwierdzony';
+            $transfer->save();
+        });
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Transfer $transfer)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Transfer $transfer)
-    {
-        //
+        return response()->json(['message' => 'Transfer zatwierdzony pomyślnie']);
     }
 }
