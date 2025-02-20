@@ -19,11 +19,10 @@
                     </div>
                 </div>
                 <div v-else class="text-gray-500">Brak dostępnych lodów</div>
-                <Button label="Edytuj" icon="pi pi-pencil" class="mt-4 mr-2" @click="openEditDialog(storage)" />
+                <Button label="Edytuj" icon="pi pi-pencil" class="mt-4 mr-2" @click="handleEdit(storage)" />
 
 
-                <Button label="Transfer z" icon="pi pi-plus" class="mt-4"
-                    @click="openTransferDialog(storage.storage_id)" />
+                <Button label="Transfer z" icon="pi pi-plus" class="mt-4" @click="handleTransfer(storage.storage_id)" />
 
             </div>
         </div>
@@ -47,12 +46,11 @@
         </Dialog>
         <Dialog v-model:visible="transferDialogVisible" modal header="Transfer" :style="{ width: '600px' }">
             <div>
-                <Select v-model="destinationStorage" :options="storageOptions" optionLabel="storage_name" optionValue="storage_id"
-                    placeholder="Magazyn docelowy" class="w-60" />
-                <Select v-model="selectedIceCream" :options="iceCreamOptions" optionLabel="ice_cream_name" optionValue="ice_cream_id" placeholder="Lody"
-                    class="w-60" />
-                    <Select v-model="selectedQuantity" :options="quantity" placeholder="Ilość"
-                    class="w-60" />
+                <Select v-model="transferData.destination_storage_id" :options="storageOptions"
+                    optionLabel="storage_name" optionValue="storage_id" placeholder="Magazyn docelowy" class="w-60" />
+                <Select v-model="transferData.ice_cream_id" :options="iceCreamOptions" optionLabel="ice_cream_name"
+                    optionValue="ice_cream_id" placeholder="Lody" class="w-60" />
+                <Select v-model="transferData.quantity" :options="quantity" placeholder="Ilość" class="w-60" />
             </div>
 
             <Button label="Zapisz" @click="makeTransfer" class="mt-3" />
@@ -63,7 +61,7 @@
 </template>
 <script setup>
 import axios from "axios";
-import { onMounted, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 
 const props = defineProps({
     id: {
@@ -72,63 +70,53 @@ const props = defineProps({
     },
 });
 
-
-const selectedQuantity = ref(0)
 const storageOptions = ref([])
-const quantity = [1,2,3,4,5,6,7,8,9,10]
-const sourceStorage = ref()
-const destinationStorage = ref()
-const selectedIceCream = ref(0)
+const quantity = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const iceCreamOptions = ref([])
 const storages = ref([]);
 const editDialogVisible = ref(false);
 const transferDialogVisible = ref(false);
 let selectedStorage = ref(null);
 const editedCells = ref([]);
+const transferData = reactive({
+    source_storage_id: null,
+    destination_storage_id: null,
+    ice_cream_id: null,
+    quantity: null
+});
+
 onMounted(async () => {
     await getStorages()
 });
 
 
-const openEditDialog = (storage) => {
-    console.log(storage);
+const handleEdit = (storage) => {
     selectedStorage = JSON.parse(JSON.stringify(storage));
     editDialogVisible.value = true;
 };
 
-const openTransferDialog = (id) => {
-    sourceStorage.value = id
+const handleTransfer = (id) => {
+    transferData.source_storage_id = id
     iceCreamOptions.value = storages.value.find((storage) => storage.storage_id == id)?.inventory.filter(item => item.quantity > 0) || [];
     storageOptions.value = storages.value.filter((storage) => storage.storage_id != id);
     transferDialogVisible.value = true;
 };
-const makeTransfer = async () => {
-    console.log(selectedIceCream.value)
-    console.log({
-            source_storage_id: sourceStorage.value,
-            destination_storage_id: destinationStorage.value,
-            ice_cream_id: selectedIceCream.value,
-            quantity: selectedQuantity.value,
-        })
-    try {
-        const response = await axios.post('/api/transfers', {
-            source_storage_id: sourceStorage.value,
-            destination_storage_id: destinationStorage.value,
-            ice_cream_id: selectedIceCream.value,
-            quantity: selectedQuantity.value,
-        });
-        if (response.status === 200) {
-            await getStorages();
 
-            transferDialogVisible.value = false;
+const makeTransfer = async () => {
+    try {
+        const response = await axios.post('/api/transfers', transferData);
+        if (response.status === 200) {
+            await refreshData();
+
         } else {
             alert('Wystąpił problem podczas transferu.');
         }
     } catch (error) {
         console.error("Błąd:", error.response?.data || error.message);
-    alert("Błąd: " + JSON.stringify(error.response?.data));
+        alert("Błąd: " + JSON.stringify(error.response?.data));
     }
 };
+
 const onCellEditComplete = (event) => {
     console.log(event);
     let { newData, newValue, data, field } = event;
@@ -140,6 +128,7 @@ const onCellEditComplete = (event) => {
         editedCells.value.push(newData);
     }
 };
+
 const saveAllChanges = async () => {
     if (editedCells.value.length === 0) {
         alert('Brak zmian do zapisania.');
@@ -151,8 +140,8 @@ const saveAllChanges = async () => {
 
         if (response.status === 200) {
             alert('Zmiany zapisane pomyślnie!');
-            await getStorages();
-            editedCells.value = [];
+            await refreshData();
+
         } else {
             alert('Wystąpił problem podczas zapisywania.');
         }
@@ -160,15 +149,25 @@ const saveAllChanges = async () => {
         console.error('Błąd podczas zapisywania zmian:', error);
         alert('Błąd podczas komunikacji z serwerem.');
     }
-    editDialogVisible.value = false;
 };
 
+function resetTransferData() {
+    Object.keys(transferData).forEach(key => transferData[key] = null);
+}
 
-
-
-
-const getStorages = async () => {
-    const response = await axios.get(`/api/storages/${props.id}`)
-    storages.value = response.data
+async function getStorages() {
+    try {
+        const response = await axios.get(`/api/storages/${props.id}`);
+        storages.value = response.data;
+    } catch (error) {
+        console.error("Błąd pobierania magazynów:", error.response?.data || error.message);
+        alert("Nie udało się pobrać danych magazynowych.");
+    }
+}
+async function refreshData() {
+    await getStorages();
+    resetTransferData()
+    editedCells.value = [];
+    transferDialogVisible.value = false;
 }
 </script>
