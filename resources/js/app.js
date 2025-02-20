@@ -23,6 +23,8 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ColumnGroup from 'primevue/columngroup';   // optional
 import Row from 'primevue/row';  
+import Select from 'primevue/select';
+
 
 
 const app = createApp(App);
@@ -50,6 +52,6 @@ app.component("Dialog", Dialog);
 app.component("Toast", Toast);
 app.component("ScrollPanel", ScrollPanel);
 app.component("AutoComplete", AutoComplete);
-
+app.component("Select", Select);
 app.mount("#app");
 

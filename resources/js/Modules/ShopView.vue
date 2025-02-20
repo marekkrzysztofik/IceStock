@@ -22,7 +22,8 @@
                 <Button label="Edytuj" icon="pi pi-pencil" class="mt-4 mr-2" @click="openEditDialog(storage)" />
 
 
-                <Button label="Transfer z" icon="pi pi-plus" class="mt-4" @click="openTransferDialog(storage)" />
+                <Button label="Transfer z" icon="pi pi-plus" class="mt-4"
+                    @click="openTransferDialog(storage.storage_id)" />
 
             </div>
         </div>
@@ -44,13 +45,17 @@
             </DataTable>
             <Button label="Zapisz" @click="saveAllChanges" class="mt-3" />
         </Dialog>
-        <Dialog v-model:visible="addDialogVisible" modal header="Transfer" :style="{ width: '600px' }">
+        <Dialog v-model:visible="transferDialogVisible" modal header="Transfer" :style="{ width: '600px' }">
             <div>
-                <AutoComplete v-model="value" dropdown :suggestions="storages" optionLabel="storage_name"
-                    @complete="search" />
+                <Select v-model="destinationStorage" :options="storageOptions" optionLabel="storage_name" optionValue="storage_id"
+                    placeholder="Magazyn docelowy" class="w-60" />
+                <Select v-model="selectedIceCream" :options="iceCreamOptions" optionLabel="ice_cream_name" optionValue="ice_cream_id" placeholder="Lody"
+                    class="w-60" />
+                    <Select v-model="selectedQuantity" :options="quantity" placeholder="Ilość"
+                    class="w-60" />
             </div>
 
-            <Button label="Zapisz" @click="saveAllChanges" class="mt-3" />
+            <Button label="Zapisz" @click="makeTransfer" class="mt-3" />
         </Dialog>
 
     </div>
@@ -67,30 +72,62 @@ const props = defineProps({
     },
 });
 
-const value = ref("")
+
+const selectedQuantity = ref(0)
+const storageOptions = ref([])
+const quantity = [1,2,3,4,5,6,7,8,9,10]
+const sourceStorage = ref()
+const destinationStorage = ref()
+const selectedIceCream = ref(0)
+const iceCreamOptions = ref([])
 const storages = ref([]);
 const editDialogVisible = ref(false);
-const addDialogVisible = ref(false);
+const transferDialogVisible = ref(false);
 let selectedStorage = ref(null);
 const editedCells = ref([]);
 onMounted(async () => {
     await getStorages()
 });
 
-const search = (event) => {
-    let _items = [...storages.value];
-    storages.value = event.query ? [...storages.value].map((item) => event.query + '-' + item) : _items;
-};
+
 const openEditDialog = (storage) => {
     console.log(storage);
     selectedStorage = JSON.parse(JSON.stringify(storage));
     editDialogVisible.value = true;
 };
 
-const openTransferDialog = (storage) => {
+const openTransferDialog = (id) => {
+    sourceStorage.value = id
+    iceCreamOptions.value = storages.value.find((storage) => storage.storage_id == id)?.inventory.filter(item => item.quantity > 0) || [];
+    storageOptions.value = storages.value.filter((storage) => storage.storage_id != id);
+    transferDialogVisible.value = true;
+};
+const makeTransfer = async () => {
+    console.log(selectedIceCream.value)
+    console.log({
+            source_storage_id: sourceStorage.value,
+            destination_storage_id: destinationStorage.value,
+            ice_cream_id: selectedIceCream.value,
+            quantity: selectedQuantity.value,
+        })
+    try {
+        const response = await axios.post('/api/transfers', {
+            source_storage_id: sourceStorage.value,
+            destination_storage_id: destinationStorage.value,
+            ice_cream_id: selectedIceCream.value,
+            quantity: selectedQuantity.value,
+        });
+        if (response.status === 200) {
+            await getStorages();
 
-    selectedStorage = JSON.parse(JSON.stringify(storage));
-    addDialogVisible.value = true;
+            transferDialogVisible.value = false;
+        } else {
+            alert('Wystąpił problem podczas transferu.');
+        }
+    } catch (error) {
+        console.error("Błąd:", error.response?.data || error.message);
+    alert("Błąd: " + JSON.stringify(error.response?.data));
+    }
 };
 const onCellEditComplete = (event) => {
     console.log(event);

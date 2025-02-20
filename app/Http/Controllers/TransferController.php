@@ -7,6 +7,7 @@ use App\Models\Transfer;
 use App\Models\Inventory;
 use App\Models\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TransferController extends Controller
 {
@@ -18,10 +19,21 @@ class TransferController extends Controller
             'ice_cream_id' => 'required|exists:ice_creams,id',
             'quantity' => 'required|integer|min:1',
         ]);
-
+        Log::info("Szukam inventory dla", [
+            'storage_id' => $validated['source_storage_id'],
+            'ice_cream_id' => $validated['ice_cream_id']
+        ]);
         $inventory = Inventory::where('storage_id', $validated['source_storage_id'])
             ->where('ice_cream_id', $validated['ice_cream_id'])
             ->first();
+            if (!$inventory) {
+                Log::error("Nie znaleziono inventory!", [
+                    'storage_id' => $validated['source_storage_id'],
+                    'ice_cream_id' => $validated['ice_cream_id']
+                ]);
+                return response()->json(['error' => 'Brak produktu w magazynie'], 404);
+            }
+            Log::info("Znaleziono inventory:", ['quantity' => $inventory->quantity]);
 
         if (!$inventory || $inventory->quantity < $validated['quantity']) {
             return response()->json(['error' => 'Niewystarczająca ilość produktu w magazynie'], 400);
