@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('transfers', function (Blueprint $table) {
+        Schema::create('productions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('source_storage_id')->nullable()->references('id')->on('storages')->onDelete('cascade');
-            $table->foreignId('destination_storage_id')->references('id')->on('storages')->onDelete('cascade');
+            $table->foreignId('transfer_id')->references('id')->on('transfers')->onDelete('cascade');
             $table->foreignId('ice_cream_id')->references('id')->on('ice_creams')->onDelete('cascade');
             $table->integer('quantity');
-            $table->enum('status', ['oczekujacy', 'zatwierdzony'])->default('oczekujacy');
+            $table->foreignId('user_id')->nullable()->references('id')->on('users')->onDelete('set null');
+            $table->string('batch_id')->nullable();
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('transfers');
+        Schema::dropIfExists('productions');
     }
 };
