@@ -37,7 +37,7 @@
                 <Column style="width: 15rem;" field="ice_cream_name" header="Smak lodów" />
                 <Column field="quantity" header="Ilość kuwet">
                     <template #editor="{ data, field }">
-                        <InputNumber v-model="data[field]" :min="0" />
+                        <InputNumber v-model="data[field]" :min="initialValue" />
                     </template>
                 </Column>
 
@@ -69,7 +69,7 @@ const props = defineProps({
         default: 0,
     },
 });
-
+const initialValue = ref();
 const storageOptions = ref([])
 const quantity = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const iceCreamOptions = ref([])
@@ -77,20 +77,25 @@ const storages = ref([]);
 const editDialogVisible = ref(false);
 const transferDialogVisible = ref(false);
 let selectedStorage = ref(null);
-const editedCells = ref([]);
+const productionData = reactive({
+    shop_id: parseInt(props.id),
+    destination_storage_id: null,
+    ice_creams: [],
+});
 const transferData = reactive({
     source_storage_id: null,
     destination_storage_id: null,
     ice_cream_id: null,
     quantity: null
 });
-
 onMounted(async () => {
     await getStorages()
 });
 
 
 const handleEdit = (storage) => {
+    
+    productionData.destination_storage_id = storage.storage_id;
     selectedStorage = JSON.parse(JSON.stringify(storage));
     editDialogVisible.value = true;
 };
@@ -106,7 +111,7 @@ const makeTransfer = async () => {
     try {
         const response = await axios.post('/api/transfers', transferData);
         if (response.status === 200) {
-            await refreshData();
+            await refreshTransferData();
 
         } else {
             alert('Wystąpił problem podczas transferu.');
@@ -118,41 +123,52 @@ const makeTransfer = async () => {
 };
 
 const onCellEditComplete = (event) => {
-    console.log(event);
-    let { newData, newValue, data, field } = event;
+    let { newValue, data, field } = event;
+    initialValue.value = data[field];
     data[field] = newValue;
-    const existing = editedCells.value.find(item => item.id === newData.id);
-    if (existing) {
-        Object.assign(existing, newData);
+    const existingIndex = productionData.ice_creams.findIndex(item => item.ice_cream_id === data.ice_cream_id);
+    if (existingIndex !== -1) {
+        productionData.ice_creams[existingIndex].quantity = data.quantity;
     } else {
-        editedCells.value.push(newData);
+        // Jeśli nie istnieje, dodajemy nowy wpis
+        productionData.ice_creams.push({
+            ice_cream_id: data.ice_cream_id,
+            quantity: data.quantity
+        });
     }
 };
 
 const saveAllChanges = async () => {
-    if (editedCells.value.length === 0) {
+    if (productionData.ice_creams.length === 0) {
         alert('Brak zmian do zapisania.');
         return;
     }
     try {
         // Wysyłamy pełne dane, a nie tylko id i quantity
-        const response = await axios.post('/api/inventories/bulk-update', { updatedRows: editedCells.value });
+        const response = await axios.post('/api/productions', productionData);
 
         if (response.status === 200) {
             alert('Zmiany zapisane pomyślnie!');
-            await refreshData();
+            await refreshProductionData();
 
         } else {
-            alert('Wystąpił problem podczas zapisywania.');
+            console.log(response.status)
         }
     } catch (error) {
         console.error('Błąd podczas zapisywania zmian:', error);
         alert('Błąd podczas komunikacji z serwerem.');
     }
 };
+function resetProductionData() {
+    editDialogVisible.value = false;
+    productionData.shop_id = props.id;
+    productionData.destination_storage_id = null;
+    productionData.ice_creams = []; 
 
+}
 function resetTransferData() {
     Object.keys(transferData).forEach(key => transferData[key] = null);
+    transferDialogVisible.value = false;
 }
 
 async function getStorages() {
@@ -164,10 +180,13 @@ async function getStorages() {
         alert("Nie udało się pobrać danych magazynowych.");
     }
 }
-async function refreshData() {
+
+async function refreshProductionData() {
+    await getStorages();
+    resetProductionData()
+}
+async function refreshTransferData() {
     await getStorages();
     resetTransferData()
-    editedCells.value = [];
-    transferDialogVisible.value = false;
 }
 </script>

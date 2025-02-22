@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('productions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('transfer_id')->references('id')->on('transfers')->onDelete('cascade');
+            $table->foreignId('shop_id')->references('id')->on('shops')->onDelete('cascade');
             $table->foreignId('ice_cream_id')->references('id')->on('ice_creams')->onDelete('cascade');
             $table->integer('quantity');
-            $table->foreignId('user_id')->nullable()->references('id')->on('users')->onDelete('set null');
+          //  $table->foreignId('user_id')->nullable()->references('id')->on('users')->onDelete('set null');
             $table->string('batch_id')->nullable();
             $table->timestamps();
         });

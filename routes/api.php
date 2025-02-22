@@ -7,6 +7,7 @@ use App\Http\Controllers\StorageController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\TransferController;
+use App\Http\Controllers\ProductionController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -23,3 +24,5 @@ Route::post('inventories/bulk-update', [InventoryController::class, 'bulkUpdate'
 Route::post('transfers', [TransferController::class, 'createTransfer']);
 
 Route::apiResource('storages', StorageController::class);
+
+Route::apiResource('productions', ProductionController::class);

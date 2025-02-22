@@ -10,6 +10,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,7 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Błędy bazy danych
         $exceptions->render(function (QueryException $e, Request $request) {
-            \Log::error('Błąd bazy danych', [
+            Log::error('Błąd bazy danych', [
                 'message' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings()

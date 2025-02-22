@@ -7,19 +7,14 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 
-class IceCreamShopSeeder extends Seeder
+class StorageSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        DB::table('shops')->insertOrIgnore([
-            ['name' => 'Chwarzno', 'address' => 'Gdynia, Chwarzno'],
-            ['name' => 'Karwiny', 'address' => 'Gdynia, Karwiny'],
-            ['name' => 'Gdańsk', 'address' => 'Gdańsk, Centrum'],
-            ['name' => 'Rewa', 'address' => 'Rewa, Nadmorska'],
-        ]);
+       
         DB::table('storages')->insertOrIgnore([
             ['shop_id' => 1, 'name' => 'Mroźnia 1 - Chwarzno'],
             ['shop_id' => 1, 'name' => 'Mroźnia 2 - Chwarzno'],

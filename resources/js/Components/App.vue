@@ -5,7 +5,7 @@
         </div>
         <ul class="flex space-x-6 text-lg">
             <li><a href="/" class="hover:underline hover:text-blue-300 transition-colors duration-300">Home</a></li>
-            <li><a href="/inventory"
+            <li><a href="/home"
                     class="hover:underline hover:text-blue-300 transition-colors duration-300">Inventory</a></li>
             <li><a href="/transfers"
                     class="hover:underline hover:text-blue-300 transition-colors duration-300">Transfers</a></li>

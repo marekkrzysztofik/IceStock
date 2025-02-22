@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     */
+     */ 
     public function up(): void
     {
         Schema::create('transfers', function (Blueprint $table) {
@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('destination_storage_id')->references('id')->on('storages')->onDelete('cascade');
             $table->foreignId('ice_cream_id')->references('id')->on('ice_creams')->onDelete('cascade');
             $table->integer('quantity');
-            $table->enum('status', ['oczekujacy', 'zatwierdzony'])->default('oczekujacy');
+            $table->enum('status', ['oczekujacy', 'zatwierdzony','production'])->default('oczekujacy');
             $table->timestamps();
         });
     }
