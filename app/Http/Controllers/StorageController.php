@@ -21,7 +21,7 @@ class StorageController extends Controller
             return [
                 'storage_id' => $storage->id,
                 'storage_name' => $storage->name,
-                'inventory' => $storage->inventories->map(function ($inventory) {
+                'inventory' => $storage->inventories ->where('quantity', '>', 0)->map(function ($inventory) {
                     return [
                         'id' => $inventory->id,
                         'storage_id' => $inventory->storage_id,
@@ -29,7 +29,7 @@ class StorageController extends Controller
                         'ice_cream_name' => $inventory->iceCream->name ?? null,
                         'quantity' => $inventory->quantity,
                     ];
-                })->toArray()
+                })->values()->toArray()
             ];
         });
 

@@ -7,18 +7,17 @@
                 class="p-4 bg-gradient-to-b from-blue-100 to-blue-50 rounded-xl shadow-md ">
                 <h3 class="text-xl font-semibold mb-4 text-blue-700">{{ storage.storage_name }}</h3>
                 <div v-if="storage.inventory.length > 0" class="grid grid-cols-5 gap-4  justify-items-center m-auto">
-                    <div v-for="item in storage.inventory" :key="item.id" class="relative p-4 rounded-2xl backdrop-blur-lg bg-white/20 shadow-lg border border-white/30 glass-card w-full h-40 flex flex-col justify-between items-center">
+                    <div v-for="item in storage.inventory" :key="item.id"
+                        class="relative p-4 rounded-2xl backdrop-blur-lg bg-white/20 shadow-lg border border-white/30 glass-card w-full h-40 flex flex-col justify-between items-center">
                         <div v-if="item.quantity > 0" class="flex flex-col">
                             <span class="text-lg font-medium text-blue-600">{{ item.ice_cream_name }}</span>
                             <div class="relative flex items-center space-x-1">
-                                <div 
-                                v-for="n in item.quantity" 
-                                :key="n" 
-                                class="w-5 h-8 rounded-md backdrop-blur-md border border-white/20 bg-blue-500/40 kuwet-shadow">
-                               
-                              </div>
+                                <div v-for="n in item.quantity" :key="n"
+                                    class="w-5 h-8 rounded-md backdrop-blur-md border border-white/20 bg-blue-500/40 kuwet-shadow">
+
+                                </div>
                             </div>
-                            
+
                             <p class="text-sm text-gray-700 mt-2">Ilość kuwet: {{ item.quantity }}</p>
                         </div>
                     </div>
@@ -32,17 +31,13 @@
             </div>
         </div>
         <Dialog v-model:visible="editDialogVisible" modal header="Edytuj inventory" :style="{ width: '600px' }">
-            <DataTable v-model:value="selectedStorage.inventory" @cell-edit-complete="onCellEditComplete"
-                editMode="cell" class="p-datatable-sm">
-                <template #header>
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-xl font-bold"></span>
-                    </div>
-                </template>
-                <Column style="width: 15rem;" field="ice_cream_name" header="Smak lodów" />
+            <DataTable v-model:value="iceCreams" @cell-edit-complete="onCellEditComplete" editMode="cell"
+                class="p-datatable-sm">
+
+                <Column style="width: 15rem;" field="name" header="Smak lodów" />
                 <Column field="quantity" header="Ilość kuwet">
                     <template #editor="{ data, field }">
-                        <InputNumber v-model="data[field]" :min="initialValue" />
+                        <input type="number" v-model="data[field]"></input>
                     </template>
                 </Column>
 
@@ -74,14 +69,13 @@ const props = defineProps({
         default: 0,
     },
 });
-const initialValue = ref();
 const storageOptions = ref([])
+const iceCreams = ref()
 const quantity = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const iceCreamOptions = ref([])
 const storages = ref([]);
 const editDialogVisible = ref(false);
 const transferDialogVisible = ref(false);
-let selectedStorage = ref(null);
 const productionData = reactive({
     shop_id: parseInt(props.id),
     destination_storage_id: null,
@@ -95,13 +89,11 @@ const transferData = reactive({
 });
 onMounted(async () => {
     await getStorages()
+    await getIceCream()
 });
 
-
 const handleEdit = (storage) => {
-
     productionData.destination_storage_id = storage.storage_id;
-    selectedStorage = JSON.parse(JSON.stringify(storage));
     editDialogVisible.value = true;
 };
 
@@ -129,18 +121,27 @@ const makeTransfer = async () => {
 
 const onCellEditComplete = (event) => {
     let { newValue, data, field } = event;
-    initialValue.value = data[field];
+
     data[field] = newValue;
-    const existingIndex = productionData.ice_creams.findIndex(item => item.ice_cream_id === data.ice_cream_id);
+    console.log(data, field, newValue)
+    const existingIndex = productionData.ice_creams.findIndex(item => item.ice_cream_id === data.id);
     if (existingIndex !== -1) {
-        productionData.ice_creams[existingIndex].quantity = data.quantity;
+        if (data.quantity > 0) {
+            productionData.ice_creams[existingIndex].quantity = data.quantity;
+        } else {
+            // Jeśli quantity = 0, usuwamy wpis
+            productionData.ice_creams.splice(existingIndex, 1);
+        }
     } else {
-        // Jeśli nie istnieje, dodajemy nowy wpis
-        productionData.ice_creams.push({
-            ice_cream_id: data.ice_cream_id,
-            quantity: data.quantity
-        });
+        // Dodaj nowy wpis tylko, jeśli quantity > 0
+        if (data.quantity > 0) {
+            productionData.ice_creams.push({
+                ice_cream_id: data.id,
+                quantity: data.quantity
+            });
+        }
     }
+    console.log(productionData)
 };
 
 const saveAllChanges = async () => {
@@ -175,9 +176,7 @@ function resetTransferData() {
     Object.keys(transferData).forEach(key => transferData[key] = null);
     transferDialogVisible.value = false;
 }
-function storagesWithQuantity() {
-    return storages.value.filter(storage => storage.inventory.length > 0);
-}
+
 async function getStorages() {
     try {
         const response = await axios.get(`/api/storages/${props.id}`);
@@ -187,7 +186,16 @@ async function getStorages() {
         alert("Nie udało się pobrać danych magazynowych.");
     }
 }
-
+async function getIceCream() {
+    try {
+        const response = await axios.get(`/api/icecreams`);
+        iceCreams.value = response.data;
+    } catch (error) {
+        console.error("Błąd pobierania magazynów:", error.response?.data || error.message);
+        alert("Nie udało się pobrać danych magazynowych.");
+    }
+    console.log(iceCreams.value)
+}
 async function refreshProductionData() {
     await getStorages();
     resetProductionData()

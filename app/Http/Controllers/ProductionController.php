@@ -53,7 +53,7 @@ class ProductionController extends Controller
             return response()->json([
                 'message' => 'Produkcja zarejestrowana',
                 'transfers' => $transfers
-            ], 201);
+            ], 200);
         });
     }
 }
