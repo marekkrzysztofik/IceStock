@@ -21,6 +21,7 @@ Route::apiResource('shops', ShopController::class);
 Route::apiResource('inventories', InventoryController::class);
 Route::post('inventories/bulk-update', [InventoryController::class, 'bulkUpdate']);
 
+Route::apiResource('transfers', TransferController::class);
 Route::post('transfers', [TransferController::class, 'createTransfer']);
 
 Route::apiResource('storages', StorageController::class);

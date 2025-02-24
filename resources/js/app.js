@@ -8,8 +8,8 @@ import PrimeVue from "primevue/config";
 
 
 
-import "primeicons/primeicons.css"; //icons
-import Aura from '@primevue/themes/aura';
+import "primeicons/primeicons.css"; //icons  
+import Aura from '@primeuix/themes/aura';
 import ToastService from "primevue/toastservice";
 import Toast from "primevue/toast";
 import ConfirmationService from "primevue/confirmationservice";

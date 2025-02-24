@@ -8,9 +8,32 @@ use App\Models\Inventory;
 use App\Models\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\Production;
 
 class TransferController extends Controller
 {
+
+    public function index()
+    {
+        // Pobranie transferów
+        $transfers = Transfer::with(['source', 'destination', 'iceCream'])
+            ->get()
+            ->map(function ($transfer) {
+                return [
+                    'id' => $transfer->id,
+                    'type' => $transfer->status === 'production' ? 'Production' : 'Transfer',
+                    'source' => $transfer->source_storage_id ? $transfer->source->name : 'Produkcja ' . $transfer->destination->Shop->name,
+                    'destination' => $transfer->destination->name,
+                    'ice_cream' => $transfer->iceCream->name,
+                    'quantity' => $transfer->quantity,
+                    'date' => $transfer->created_at->format('d-m-Y H:i'),
+                    'status' => ucfirst($transfer->status),
+                ];
+            });
+        return $transfers;
+    }
+
+
     public function createTransfer(Request $request)
     {
         $validated = $request->validate([
@@ -26,14 +49,14 @@ class TransferController extends Controller
         $inventory = Inventory::where('storage_id', $validated['source_storage_id'])
             ->where('ice_cream_id', $validated['ice_cream_id'])
             ->first();
-            if (!$inventory) {
-                Log::error("Nie znaleziono inventory!", [
-                    'storage_id' => $validated['source_storage_id'],
-                    'ice_cream_id' => $validated['ice_cream_id']
-                ]);
-                return response()->json(['error' => 'Brak produktu w magazynie'], 404);
-            }
-            Log::info("Znaleziono inventory:", ['quantity' => $inventory->quantity]);
+        if (!$inventory) {
+            Log::error("Nie znaleziono inventory!", [
+                'storage_id' => $validated['source_storage_id'],
+                'ice_cream_id' => $validated['ice_cream_id']
+            ]);
+            return response()->json(['error' => 'Brak produktu w magazynie'], 404);
+        }
+        Log::info("Znaleziono inventory:", ['quantity' => $inventory->quantity]);
 
         if (!$inventory || $inventory->quantity < $validated['quantity']) {
             return response()->json(['error' => 'Niewystarczająca ilość produktu w magazynie'], 400);

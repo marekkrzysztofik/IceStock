@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+    --background: #578FCA;/* Jasny błękit */
+    --card-background: rgba(255, 255, 255, 0.2); /* Glassmorphism */
+    --text-color: #1E3A8A; /* Chłodny granat */
+    --border-color: rgba(255, 255, 255, 0.3); /* Subtelne linie */
+  }
+
+  body {
+    background: var(--background);
+    color: var(--text-color);
+    font-family: 'Poppins', sans-serif;
+  }

@@ -17,4 +17,8 @@ class Storage extends Model
 {
     return $this->hasMany(Inventory::class);
 }
+public function transfers()
+{
+    return $this->hasMany(Transfer::class);
+}
 }

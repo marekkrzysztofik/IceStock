@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import Home from "@/Components/Home.vue"
 import Welcome from "@/Components/Welcome.vue"
 import ShopView from "@/Modules/ShopView.vue";
+import Transfers from "@/Modules/Transfers.vue";
 
 const routes = [
     {
@@ -21,8 +22,13 @@ const routes = [
         component: ShopView,
         name: "ShopView",
         props: true,
-    }
-   
+    },
+    {
+        path: "/transfers",
+        component: Transfers,
+        name: "Transfers",
+       
+    },
 ];
 const router = createRouter({
     history: createWebHistory(),

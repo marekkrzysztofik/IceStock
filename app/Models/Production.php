@@ -18,4 +18,8 @@ class Production extends Model
     {
         return $this->belongsTo(Shop::class);
     }
+    public function iceCream()
+    {
+        return $this->belongsTo(IceCream::class);
+    }
 }
