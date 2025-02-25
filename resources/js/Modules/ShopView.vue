@@ -3,31 +3,26 @@
         <h1>Stany magazynowe lodów</h1>
 
         <div class="">
-            <div v-for="storage in storages" :key="storage.storage_id"
-                class="p-4 bg-gradient-to-b from-blue-100 to-blue-50 rounded-xl shadow-md ">
-                <h3 class="text-xl font-semibold mb-4 text-blue-700">{{ storage.storage_name }}</h3>
-                <div v-if="storage.inventory.length > 0" class="grid grid-cols-5 gap-4  justify-items-center m-auto">
-                    <div v-for="item in storage.inventory" :key="item.id"
-                        class="relative p-4 rounded-2xl backdrop-blur-lg bg-white/20 shadow-lg border border-white/30 glass-card w-full h-40 flex flex-col justify-between items-center">
-                        <div v-if="item.quantity > 0" class="flex flex-col">
-                            <span class="text-lg font-medium text-blue-600">{{ item.ice_cream_name }}</span>
-                            <div class="relative flex items-center space-x-1">
-                                <div v-for="n in item.quantity" :key="n"
-                                    class="w-5 h-8 rounded-md backdrop-blur-md border border-white/20 bg-blue-500/40 kuwet-shadow">
-
+            <div class="content-wrapper">
+                <div class="storage-list">
+                    <div v-for="storage in storages" :key="storage.storage_id" class="storage-card">
+                        <h3 class="storage-title">{{ storage.storage_name }}</h3>
+                        <div v-if="storage.inventory.length > 0" class="inventory-grid">
+                            <div v-for="item in storage.inventory" :key="item.id" class="inventory-item">
+                                <div v-if="item.quantity > 0" class="item-info">
+                                    <span class="item-name">{{ item.ice_cream_name }}</span>
+                                    <div class="quantity-container">
+                                        <div v-for="n in item.quantity" :key="n" class="quantity-box"></div>
+                                    </div>
+                                    <p class="item-quantity">Ilość kuwet: {{ item.quantity }}</p>
                                 </div>
                             </div>
-
-                            <p class="text-sm text-gray-700 mt-2">Ilość kuwet: {{ item.quantity }}</p>
                         </div>
+                        <div v-else class="no-inventory">Brak dostępnych lodów</div>
+                        <button class="edit-btn" @click="handleEdit(storage)">Edytuj</button>
+                        <button class="transfer-btn" @click="handleTransfer(storage.storage_id)">Transfer z</button>
                     </div>
                 </div>
-                <div v-else class="text-gray-500">Brak dostępnych lodów</div>
-                <Button label="Edytuj" icon="pi pi-pencil" class="mt-4 mr-2" @click="handleEdit(storage)" />
-
-
-                <Button label="Transfer z" icon="pi pi-plus" class="mt-4" @click="handleTransfer(storage.storage_id)" />
-
             </div>
         </div>
         <Dialog v-model:visible="editDialogVisible" modal header="Edytuj inventory" :style="{ width: '600px' }">
@@ -205,3 +200,102 @@ async function refreshTransferData() {
     resetTransferData()
 }
 </script>
+<style scoped>
+.nav-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 16px;
+    background: linear-gradient(to right, #FFF2F2, #A9B5DF);
+    color: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.storage-list {
+    padding: 20px;
+}
+
+.storage-card {
+    background: linear-gradient(to bottom, #A9B5DF, #FFF2F2);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.storage-title {
+    color: #2D336B;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+.inventory-item {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 10px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.item-name {
+    color: #2D336B;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.quantity-container {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    margin-top: 5px;
+}
+
+.quantity-box {
+    width: 20px;
+    height: 40px;
+    background: #2D336B;
+    border-radius: 4px;
+}
+
+.edit-btn, .transfer-btn {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.edit-btn {
+    background-color: #A9B5DF;
+    color: white;
+}
+
+.edit-btn:hover {
+    background-color: #7886C7;
+    transform: scale(1.05);
+}
+
+.transfer-btn {
+    background-color: #2D336B;
+    color: white;
+}
+
+.transfer-btn:hover {
+    background-color: #7886C7;
+    transform: scale(1.05);
+}
+</style>

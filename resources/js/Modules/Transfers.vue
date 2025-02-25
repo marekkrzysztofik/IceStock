@@ -1,7 +1,7 @@
 <template>
-    <div class="m-4">
-        <DataTable :value="transfers" paginator :rows="10" :rowsPerPageOptions="[10,15]" v-model:filters="filters"
-        responsiveLayout="scroll" editMode="row" dataKey="id" filterDisplay="row" class="p-datatable" scrollable
+    <div class="p-4 flex justify-center">
+        <DataTable :value="transfers" paginator :rows="20" :rowsPerPageOptions="[20,40]" v-model:filters="filters" tableStyle="width: 50rem"
+        responsiveLayout="scroll" editMode="row" dataKey="id" filterDisplay="row" scrollable 
         scrollHeight="80vh" >
         <Column header="Typ transferu" filterField="type" style="width: 8rem">
             <template #body="{ data }">
