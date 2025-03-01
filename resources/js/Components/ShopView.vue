@@ -17,18 +17,18 @@
                             </div>
                         </div>
                         <div v-else class="no-inventory">Brak dostępnych lodów</div>
-                        <button v-if="storage.storage_type === 'storage'" class="edit-btn m-1"
-                            @click="handleEdit(storage)">Produkcja</button>
+                        <button v-if="storage.storage_type==='storage'" class="edit-btn m-1" @click="handleEdit(storage)">Produkcja</button>
+                        <button v-if="storage.storage_type==='storage'" class="edit-btn m-1" @click="handleEdit(storage)">Produkcja</button>
                         <button class="transfer-btn m-1" @click="handleTransfer(storage.storage_id)">Transfer z</button>
-                        <button v-if="storage.storage_type === 'display'" class="transfer-btn m-1">Sprzedaż</button>
+                        <button v-if="storage.storage_type==='display'" class="transfer-btn m-1" @click="handleTransfer(storage.storage_id)">Sprzedaż</button>
                     </div>
                 </div>
             </div>
         </div>
-        <Dialog v-model:visible="editDialogVisible" modal header="Wprowadź produkcję" :style="{ width: '600px' }">
-            <DataTable v-model:value="iceCreams"
-                @cell-edit-complete="(event) => onCellEditComplete(event, productionData)" editMode="cell"
+        <Dialog v-model:visible="editDialogVisible" modal header="Edytuj inventory" :style="{ width: '600px' }">
+            <DataTable v-model:value="iceCreams" @cell-edit-complete="onCellEditComplete" editMode="cell"
                 class="p-datatable-sm">
+
                 <Column style="width: 15rem;" field="name" header="Smak lodów" />
                 <Column field="quantity" header="Ilość kuwet">
                     <template #editor="{ data, field }">
@@ -37,29 +37,30 @@
                 </Column>
 
             </DataTable>
-            <Button label="Zapisz" @click="submitData('production')" class="mt-3" />
+            <Button label="Zapisz" @click="saveAllChanges" class="mt-3" />
         </Dialog>
-
+        
         <Dialog v-model:visible="transferDialogVisible" modal header="Transfer" :style="{ width: '600px' }">
             <div>
-                <DataTable v-model:value="iceCreamOptions"
-                    @cell-edit-complete="(event) => onCellEditComplete(event, transferData)" editMode="cell"
-                    class="p-datatable-sm">
+                <DataTable v-model:value="iceCreams" @cell-edit-complete="onCellEditComplete2" editMode="cell"
+                class="p-datatable-sm">
 
-                    <Column style="width: 15rem;" field="name" header="Smak lodów" />
-                    <Column field="quantity" header="Ilość kuwet">
-                        <template #editor="{ data, field }">
-                            <input type="number" v-model="data[field]"></input>
-                        </template>
-                    </Column>
+                <Column style="width: 15rem;" field="name" header="Smak lodów" />
+                <Column field="quantity" header="Ilość kuwet">
+                    <template #editor="{ data, field }">
+                        <input type="number" v-model="data[field]"></input>
+                    </template>
+                </Column>
 
-                </DataTable>
+            </DataTable>
                 <Select v-model="transferData.destination_storage_id" :options="storageOptions"
                     optionLabel="storage_name" optionValue="storage_id" placeholder="Magazyn docelowy" class="w-60" />
-
+                <Select v-model="transferData.ice_cream_id" :options="iceCreamOptions" optionLabel="ice_cream_name"
+                    optionValue="ice_cream_id" placeholder="Lody" class="w-60" />
+                <Select v-model="transferData.quantity" :options="quantity" placeholder="Ilość" class="w-60" />
             </div>
 
-            <Button label="Zapisz" @click="submitData('transfer')" class="mt-3" />
+            <Button label="Zapisz" @click="makeTransfer" class="mt-3" />
         </Dialog>
 
     </div>
@@ -75,8 +76,10 @@ const props = defineProps({
         default: 0,
     },
 });
+const availableInventory = ref()
 const storageOptions = ref([])
 const iceCreams = ref()
+const quantity = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const iceCreamOptions = ref([])
 const storages = ref([]);
 const editDialogVisible = ref(false);
@@ -89,7 +92,8 @@ const productionData = reactive({
 const transferData = reactive({
     source_storage_id: null,
     destination_storage_id: null,
-    ice_creams: [],
+    ice_cream_id: null,
+    quantity: null
 });
 onMounted(async () => {
     await getStorages()
@@ -102,65 +106,71 @@ const handleEdit = (storage) => {
 };
 
 const handleTransfer = (id) => {
-
     transferData.source_storage_id = id
-    iceCreamOptions.value = storages.value.find((storage) => storage.storage_id == id)?.inventory.reduce((acc, item) => {
-        if (item.quantity > 0) {
-            acc.push({ id: item.ice_cream_id, name: item.ice_cream_name, quantity: 0 });
-        }
-        return acc;
-    }, []) || [];
+    iceCreamOptions.value = storages.value.find((storage) => storage.storage_id == id)?.inventory.filter(item => item.quantity > 0) || [];
     storageOptions.value = storages.value.filter((storage) => storage.storage_id != id);
     transferDialogVisible.value = true;
-    console.log(iceCreamOptions.value)
 };
 
+const makeTransfer = async () => {
+    try {
+        const response = await axios.post('/api/transfers', transferData);
+        if (response.status === 200) {
+            await refreshTransferData();
 
+        } else {
+            alert('Wystąpił problem podczas transferu.');
+        }
+    } catch (error) {
+        console.error("Błąd:", error.response?.data || error.message);
+        alert("Błąd: " + JSON.stringify(error.response?.data));
+    }
+};
 
-const onCellEditComplete = (event, dataObject) => {
+const onCellEditComplete = (event) => {
     let { newValue, data, field } = event;
-    console.log(newValue, data, field)
+
     data[field] = newValue;
-    const existingIndex = dataObject.ice_creams.findIndex(item => item.ice_cream_id === data.id);
+    console.log(data, field, newValue)
+    const existingIndex = productionData.ice_creams.findIndex(item => item.ice_cream_id === data.id);
     if (existingIndex !== -1) {
         if (data.quantity > 0) {
-            dataObject.ice_creams[existingIndex].quantity = data.quantity;
+            productionData.ice_creams[existingIndex].quantity = data.quantity;
         } else {
             // Jeśli quantity = 0, usuwamy wpis
-            dataObject.ice_creams.splice(existingIndex, 1);
+            productionData.ice_creams.splice(existingIndex, 1);
         }
     } else {
         // Dodaj nowy wpis tylko, jeśli quantity > 0
         if (data.quantity > 0) {
-            dataObject.ice_creams.push({
+            productionData.ice_creams.push({
                 ice_cream_id: data.id,
                 quantity: data.quantity
             });
         }
     }
-    console.log(productionData, transferData)
+    console.log(productionData)
 };
-const submitData = async (type) => {
-    const endpoints = {
-        transfer: { data: transferData, api: "/api/transfers", refresh: refreshTransferData },
-        production: { data: productionData, api: "/api/productions", refresh: refreshProductionData }
-    };
 
-    if (!endpoints[type] || endpoints[type].data.ice_creams.length === 0) {
-        alert("Brak zmian do zapisania.");
+const saveAllChanges = async () => {
+    if (productionData.ice_creams.length === 0) {
+        alert('Brak zmian do zapisania.');
         return;
     }
-
     try {
-        const response = await axios.post(endpoints[type].api, endpoints[type].data);
+        // Wysyłamy pełne dane, a nie tylko id i quantity
+        const response = await axios.post('/api/productions', productionData);
 
         if (response.status === 200) {
-            alert("Zmiany zapisane pomyślnie!");
-            await endpoints[type].refresh();
+            alert('Zmiany zapisane pomyślnie!');
+            await refreshProductionData();
+
+        } else {
+            console.log(response.status)
         }
     } catch (error) {
-        console.error("Błąd:", error.response?.data || error.message);
-        alert("Błąd: " + JSON.stringify(error.response?.data));
+        console.error('Błąd podczas zapisywania zmian:', error);
+        alert('Błąd podczas komunikacji z serwerem.');
     }
 };
 function resetProductionData() {
@@ -171,7 +181,7 @@ function resetProductionData() {
 
 }
 function resetTransferData() {
-    transferData.ice_creams = [];
+    Object.keys(transferData).forEach(key => transferData[key] = null);
     transferDialogVisible.value = false;
 }
 
@@ -192,6 +202,7 @@ async function getIceCream() {
         console.error("Błąd pobierania magazynów:", error.response?.data || error.message);
         alert("Nie udało się pobrać danych magazynowych.");
     }
+    console.log(iceCreams.value)
 }
 async function refreshProductionData() {
     await getStorages();
@@ -272,8 +283,7 @@ async function refreshTransferData() {
     border-radius: 4px;
 }
 
-.edit-btn,
-.transfer-btn {
+.edit-btn, .transfer-btn {
     margin-top: 10px;
     padding: 8px 12px;
     border-radius: 6px;

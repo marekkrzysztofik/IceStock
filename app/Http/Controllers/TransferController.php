@@ -34,54 +34,101 @@ class TransferController extends Controller
 
     public function createTransfer(Request $request)
     {
-        $validated = $request->validate([
-            'source_storage_id' => 'required|exists:storages,id',
-            'destination_storage_id' => 'required|exists:storages,id|different:source_storage_id',
-            'ice_cream_id' => 'required|exists:ice_creams,id',
-            'quantity' => 'required|integer|min:1',
-            'type' => 'required|in:transfer,sale,production',
-        ]);
-        Log::info("Szukam inventory dla", [
-            'storage_id' => $validated['source_storage_id'],
-            'ice_cream_id' => $validated['ice_cream_id']
-        ]);
-        $inventory = Inventory::where('storage_id', $validated['source_storage_id'])
-            ->where('ice_cream_id', $validated['ice_cream_id'])
-            ->first();
+        $validated = $this->validateTransferRequest($request);
 
+        $status = $this->determineTransferStatus(
+            $validated['source_storage_id'],
+            $validated['destination_storage_id']
+        );
 
-        if (!$inventory || $inventory->quantity < $validated['quantity']) {
-            Log::error("Nie znaleziono wystarczającej ilości produktu!", [
-                'storage_id' => $validated['source_storage_id'],
-                'ice_cream_id' => $validated['ice_cream_id']
-            ]);
-            return response()->json(['error' => 'Brak wystarczającej ilości produktu w magazynie'], 400);
-        }
+        return DB::transaction(function () use ($validated, $status) {
+            $this->checkInventory($validated);
 
+            $this->processTransfers($validated, $status);
 
-        $sourceStorage = Storage::find($validated['source_storage_id']);
-        $destinationStorage = Storage::find($validated['destination_storage_id']);
-
-        $status = $sourceStorage->shop_id === $destinationStorage->shop_id ? 'zatwierdzony' : 'oczekujacy';
-
-        DB::transaction(function () use ($validated, $inventory, $status) {
-            Transfer::create(array_merge($validated, ['status' => $status]));
-
-            $inventory->decrement('quantity', $validated['quantity']);
+            $this->updateSourceInventory($validated);
 
             if ($status === 'zatwierdzony') {
-                Inventory::updateOrCreate(
-                    [
-                        'storage_id' => $validated['destination_storage_id'],
-                        'ice_cream_id' => $validated['ice_cream_id'],
-                    ],
-                    ['quantity' => DB::raw("quantity + {$validated['quantity']}")]
-                );
+                $this->updateDestinationInventory($validated);
             }
-        });
 
-        return response()->json(['message' => "Transfer utworzony pomyślnie" . ($status === 'oczekujacy' ? " i oczekuje na zatwierdzenie" : " i został automatycznie zatwierdzony")]);
+            return response()->json([
+                'message' => "Transfer utworzony pomyślnie" .
+                    ($status === 'oczekujacy' ? " i oczekuje na zatwierdzenie" : " i został automatycznie zatwierdzony"),
+            ]);
+        });
     }
+
+    private function validateTransferRequest($request)
+    {
+        return $request->validate([
+            'source_storage_id' => 'required|exists:storages,id',
+            'destination_storage_id' => 'required|exists:storages,id|different:source_storage_id',
+            'ice_creams' => 'required|array|min:1',
+            'ice_creams.*.ice_cream_id' => 'required|exists:ice_creams,id',
+            'ice_creams.*.quantity' => 'required|integer|min:1',
+        ]);
+    }
+
+    private function determineTransferStatus($sourceStorageId, $destinationStorageId)
+    {
+        return Storage::where('id', $sourceStorageId)->value('shop_id') ===
+            Storage::where('id', $destinationStorageId)->value('shop_id')
+            ? 'zatwierdzony' : 'oczekujacy';
+    }
+
+    private function checkInventory($validated)
+    {
+        $inventories = Inventory::where('storage_id', $validated['source_storage_id'])
+            ->whereIn('ice_cream_id', array_column($validated['ice_creams'], 'ice_cream_id'))
+            ->get()
+            ->keyBy('ice_cream_id');
+
+        foreach ($validated['ice_creams'] as $iceCream) {
+            if (
+                !isset($inventories[$iceCream['ice_cream_id']]) ||
+                $inventories[$iceCream['ice_cream_id']]->quantity < $iceCream['quantity']
+            ) {
+                throw new \Exception("Brak wystarczającej ilości dla smaku ID: {$iceCream['ice_cream_id']}");
+            }
+        }
+    }
+
+    private function processTransfers($validated, $status)
+    {
+        Transfer::insert(array_map(fn($iceCream) => [
+            'source_storage_id' => $validated['source_storage_id'],
+            'destination_storage_id' => $validated['destination_storage_id'],
+            'ice_cream_id' => $iceCream['ice_cream_id'],
+            'quantity' => $iceCream['quantity'],
+            'status' => $status,
+            'created_at' => now(),
+            'updated_at' => now()
+        ], $validated['ice_creams']));
+    }
+
+    private function updateSourceInventory($validated)
+    {
+        foreach ($validated['ice_creams'] as $iceCream) {
+            Inventory::where('storage_id', $validated['source_storage_id'])
+                ->where('ice_cream_id', $iceCream['ice_cream_id'])
+                ->decrement('quantity', $iceCream['quantity']);
+        }
+    }
+
+    private function updateDestinationInventory($validated)
+    {
+        foreach ($validated['ice_creams'] as $iceCream) {
+            Inventory::updateOrCreate(
+                [
+                    'storage_id' => $validated['destination_storage_id'],
+                    'ice_cream_id' => $iceCream['ice_cream_id'],
+                ],
+                ['quantity' => DB::raw("quantity + {$iceCream['quantity']}"), 'updated_at' => now()]
+            );
+        }
+    }
+
 
     public function approveTransfer(Transfer $transfer)
     {
