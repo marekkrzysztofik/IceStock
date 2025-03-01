@@ -8,7 +8,6 @@ use App\Models\Inventory;
 use App\Models\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\Production;
 
 class TransferController extends Controller
 {
@@ -21,13 +20,12 @@ class TransferController extends Controller
             ->map(function ($transfer) {
                 return [
                     'id' => $transfer->id,
-                    'type' => $transfer->status === 'production' ? 'Production' : 'Transfer',
-                    'source' => $transfer->source_storage_id ? $transfer->source->name : 'Produkcja ' . $transfer->destination->Shop->name,
+                    'source' => $transfer->source_storage_id,
                     'destination' => $transfer->destination->name,
                     'ice_cream' => $transfer->iceCream->name,
                     'quantity' => $transfer->quantity,
                     'date' => $transfer->created_at->format('d-m-Y H:i'),
-                    'status' => ucfirst($transfer->status),
+                    'status' => $transfer->status,
                 ];
             });
         return $transfers;
@@ -41,6 +39,7 @@ class TransferController extends Controller
             'destination_storage_id' => 'required|exists:storages,id|different:source_storage_id',
             'ice_cream_id' => 'required|exists:ice_creams,id',
             'quantity' => 'required|integer|min:1',
+            'type' => 'required|in:transfer,sale,production',
         ]);
         Log::info("Szukam inventory dla", [
             'storage_id' => $validated['source_storage_id'],
@@ -49,18 +48,16 @@ class TransferController extends Controller
         $inventory = Inventory::where('storage_id', $validated['source_storage_id'])
             ->where('ice_cream_id', $validated['ice_cream_id'])
             ->first();
-        if (!$inventory) {
-            Log::error("Nie znaleziono inventory!", [
+
+
+        if (!$inventory || $inventory->quantity < $validated['quantity']) {
+            Log::error("Nie znaleziono wystarczającej ilości produktu!", [
                 'storage_id' => $validated['source_storage_id'],
                 'ice_cream_id' => $validated['ice_cream_id']
             ]);
-            return response()->json(['error' => 'Brak produktu w magazynie'], 404);
+            return response()->json(['error' => 'Brak wystarczającej ilości produktu w magazynie'], 400);
         }
-        Log::info("Znaleziono inventory:", ['quantity' => $inventory->quantity]);
 
-        if (!$inventory || $inventory->quantity < $validated['quantity']) {
-            return response()->json(['error' => 'Niewystarczająca ilość produktu w magazynie'], 400);
-        }
 
         $sourceStorage = Storage::find($validated['source_storage_id']);
         $destinationStorage = Storage::find($validated['destination_storage_id']);

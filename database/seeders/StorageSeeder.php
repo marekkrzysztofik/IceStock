@@ -16,19 +16,19 @@ class StorageSeeder extends Seeder
     {
        
         DB::table('storages')->insertOrIgnore([
-            ['shop_id' => 1, 'name' => 'Mroźnia 1 - Chwarzno'],
-            ['shop_id' => 1, 'name' => 'Mroźnia 2 - Chwarzno'],
-            ['shop_id' => 1, 'name' => 'Witryna - Chwarzno'],
+            ['shop_id' => 1, 'name' => 'Mroźnia 1 - Chwarzno', 'type' => 'storage'],
+            ['shop_id' => 1, 'name' => 'Mroźnia 2 - Chwarzno', 'type' => 'storage'],
+            ['shop_id' => 1, 'name' => 'Witryna - Chwarzno', 'type' => 'display'],
 
-            ['shop_id' => 2, 'name' => 'Mroźnia 1 - Karwiny'],
-            ['shop_id' => 2, 'name' => 'Witryna - Karwiny'],
+            ['shop_id' => 2, 'name' => 'Mroźnia 1 - Karwiny', 'type' => 'storage'],
+            ['shop_id' => 2, 'name' => 'Witryna - Karwiny', 'type' => 'display'],
 
-            ['shop_id' => 3, 'name' => 'Mroźnia 1 - Gdańsk'],
-            ['shop_id' => 3, 'name' => 'Witryna - Gdańsk'],
+            ['shop_id' => 3, 'name' => 'Mroźnia 1 - Gdańsk', 'type' => 'storage'],
+            ['shop_id' => 3, 'name' => 'Witryna - Gdańsk', 'type' => 'display'],
 
-            ['shop_id' => 4, 'name' => 'Mroźnia 1 - Rewa'],
-            ['shop_id' => 4, 'name' => 'Mroźnia 2 - Rewa'],
-            ['shop_id' => 4, 'name' => 'Witryna - Rewa'],
+            ['shop_id' => 4, 'name' => 'Mroźnia 1 - Rewa', 'type' => 'storage'],
+            ['shop_id' => 4, 'name' => 'Mroźnia 2 - Rewa', 'type' => 'storage'],
+            ['shop_id' => 4, 'name' => 'Witryna - Rewa', 'type' => 'display'],
         ]);
     }
 }

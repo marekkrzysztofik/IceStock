@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('shop_id')->references('id')->on('shops')->onDelete('cascade');
             $table->string('name');
+            $table->enum('type', ['storage', 'display'])->default('storage');
             $table->timestamps();
         });
     }

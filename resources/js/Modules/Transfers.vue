@@ -67,6 +67,19 @@
                 </InputText>
             </template>
         </Column>
+        <Column header="Data" filterField="status">
+            <template #body="{ data }">
+                <div class="flex align-items-center gap-2">
+                    <span>{{ data.status }}</span>
+                </div>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+                <InputText v-model="filterModel.value" @input="filterCallback()" placeholder="Name"
+                    class="p-column-filter" style="width: 8rem">
+    
+                </InputText>
+            </template>
+        </Column>
         <Column header="Data" filterField="date">
             <template #body="{ data }">
                 <div class="flex align-items-center gap-2">
@@ -102,6 +115,7 @@ const filters = ref({
     ice_cream: { value: null, matchMode: FilterMatchMode.CONTAINS },
     quantity: { value: null, matchMode: FilterMatchMode.CONTAINS },
     date: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    status: { value: null, matchMode: FilterMatchMode.CONTAINS },
 });
 
 

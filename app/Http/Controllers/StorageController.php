@@ -21,6 +21,7 @@ class StorageController extends Controller
             return [
                 'storage_id' => $storage->id,
                 'storage_name' => $storage->name,
+                'storage_type' => $storage->type,
                 'inventory' => $storage->inventories ->where('quantity', '>', 0)->map(function ($inventory) {
                     return [
                         'id' => $inventory->id,
@@ -40,8 +41,9 @@ class StorageController extends Controller
     {
         return Storage::create($request->validate([
             'shop_id' => 'required|exists:shops,id',
-            'name' => 'required|string|max:255'
-        ]));
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:storage,display'
+        ])); 
     }
 
     public function destroy($id)

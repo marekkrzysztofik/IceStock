@@ -1,7 +1,5 @@
 <template>
     <div class="p-6">
-        <h1>Stany magazynowe lodów</h1>
-
         <div class="">
             <div class="content-wrapper">
                 <div class="storage-list">
@@ -19,8 +17,9 @@
                             </div>
                         </div>
                         <div v-else class="no-inventory">Brak dostępnych lodów</div>
-                        <button class="edit-btn" @click="handleEdit(storage)">Edytuj</button>
-                        <button class="transfer-btn" @click="handleTransfer(storage.storage_id)">Transfer z</button>
+                        <button v-if="storage.storage_type==='storage'" class="edit-btn m-1" @click="handleEdit(storage)">Produkcja</button>
+                        <button class="transfer-btn m-1" @click="handleTransfer(storage.storage_id)">Transfer z</button>
+                        <button v-if="storage.storage_type==='display'" class="transfer-btn m-1" @click="handleTransfer(storage.storage_id)">Sprzedaż</button>
                     </div>
                 </div>
             </div>

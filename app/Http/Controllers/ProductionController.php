@@ -1,7 +1,7 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use App\Models\Transfer;
 use App\Models\Production;
 use App\Models\Inventory;
 use Illuminate\Http\Request;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class ProductionController extends Controller
 {
     public function store(Request $request)
-    {
+    { 
         $validated = $request->validate([
             'shop_id' => 'required|exists:shops,id',
             'destination_storage_id' => 'required|exists:storages,id',
@@ -20,25 +20,15 @@ class ProductionController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated) {
-            $transfers = [];
+            $productions = [];
 
             foreach ($validated['ice_creams'] as $iceCream) {
-                // Tworzymy transfer produkcji
-                $transfer = Transfer::create([
-                    'source_storage_id' => null,
+                // Tworzymy wpis w tabeli productions
+                $production = Production::create([
+                    'shop_id' => $validated['shop_id'],
                     'destination_storage_id' => $validated['destination_storage_id'],
                     'ice_cream_id' => $iceCream['ice_cream_id'],
                     'quantity' => $iceCream['quantity'],
-                    'status' => 'production',
-                ]);
-
-                // Tworzymy wpis w tabeli productions
-                Production::create([
-                    'transfer_id' => $transfer->id,
-                    'shop_id' => $validated['shop_id'],
-                    'ice_cream_id' => $iceCream['ice_cream_id'],
-                    'quantity' => $iceCream['quantity'],
-                    'batch_id' => now()->format('Ymd') . '-' . $transfer->id,
                 ]);
 
                 // Aktualizacja inventory w magazynie docelowym
@@ -47,12 +37,12 @@ class ProductionController extends Controller
                     ['quantity' => DB::raw('quantity + ' . $iceCream['quantity']), 'updated_at' => now()]
                 );
 
-                $transfers[] = $transfer;
+                $productions[] = $production;
             }
 
             return response()->json([
                 'message' => 'Produkcja zarejestrowana',
-                'transfers' => $transfers
+                'productions' => $productions
             ], 200);
         });
     }
