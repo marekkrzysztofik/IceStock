@@ -1,4 +1,5 @@
 <template>
+    <Toast />
     <div class="p-6">
         <div class="">
             <div class="content-wrapper">
@@ -64,10 +65,14 @@
 
     </div>
 
+    <Button label="Zapisz" @click="showSuccess()" class="mt-3" />
 </template>
 <script setup>
 import axios from "axios";
 import { onMounted, reactive, ref } from "vue";
+import { useToast } from "primevue/usetoast";
+
+const toast = useToast();
 
 const props = defineProps({
     id: {
@@ -147,7 +152,7 @@ const submitData = async (type) => {
     };
 
     if (!endpoints[type] || endpoints[type].data.ice_creams.length === 0) {
-        alert("Brak zmian do zapisania.");
+        toast.add({ severity: 'warn', summary: 'Uwaga', detail: 'Brak zmian do zapisania', life: 4000 });
         return;
     }
 
@@ -155,13 +160,27 @@ const submitData = async (type) => {
         const response = await axios.post(endpoints[type].api, endpoints[type].data);
 
         if (response.status === 200) {
-            alert("Zmiany zapisane pomyślnie!");
+            toast.add({ severity: 'success', summary: 'Sukces!', detail: 'Zmiany wprowadzone pomyślnie', life: 4000 });
             await endpoints[type].refresh();
         }
     } catch (error) {
         console.error("Błąd:", error.response?.data || error.message);
-        alert("Błąd: " + JSON.stringify(error.response?.data));
+        toast.add({ severity: 'error', summary: 'Error', detail: `Błąd: ${JSON.stringify(error.response?.data || error.message)}`, life: 6000 });
     }
+};
+const showSuccess = () => {
+    toast.add({ severity: 'success', summary: 'Success Message', detail: 'Message Content', life: 3000 });
+};
+const showInfo = () => {
+    toast.add({ severity: 'info', summary: 'Info Message', detail: 'Message Content', life: 3000 });
+};
+
+const showWarn = () => {
+    toast.add({ severity: 'warn', summary: 'Warn Message', detail: 'Message Content', life: 3000 });
+};
+
+const showError = () => {
+    toast.add({ severity: 'error', summary: 'Error Message', detail: 'Message Content', life: 3000 });
 };
 function resetProductionData() {
     editDialogVisible.value = false;
@@ -181,7 +200,7 @@ async function getStorages() {
         storages.value = response.data;
     } catch (error) {
         console.error("Błąd pobierania magazynów:", error.response?.data || error.message);
-        alert("Nie udało się pobrać danych magazynowych.");
+        toast.add({ severity: 'warn', summary: 'Uwaga! Nie udało się pobrać danych magazynowych', detail: `${error.response?.data || error.message}`, life: 5000 });
     }
 }
 async function getIceCream() {
@@ -189,8 +208,7 @@ async function getIceCream() {
         const response = await axios.get(`/api/icecreams`);
         iceCreams.value = response.data;
     } catch (error) {
-        console.error("Błąd pobierania magazynów:", error.response?.data || error.message);
-        alert("Nie udało się pobrać danych magazynowych.");
+        toast.add({ severity: 'warn', summary: 'Uwaga! Nie udało się pobrać danych magazynowych', detail: `${error.response?.data || error.message}`, life: 5000 });
     }
 }
 async function refreshProductionData() {
